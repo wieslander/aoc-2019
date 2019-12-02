@@ -5,3 +5,5 @@ pub fn get_input() -> String {
     io::stdin().read_to_string(&mut buffer).expect("Could not read stdin");
     buffer
 }
+
+pub mod intcode;
