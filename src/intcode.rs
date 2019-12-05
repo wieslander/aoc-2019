@@ -55,12 +55,12 @@ impl Program {
         self.read(0)
     }
 
-    fn raw_param(&self, offset: usize) -> i32 {
-        self.read(self.ip + offset)
+    pub fn read(&self, addr: usize) -> i32 {
+        self.memory[addr]
     }
 
-    fn read(&self, addr: usize) -> i32 {
-        self.memory[addr]
+    fn raw_param(&self, offset: usize) -> i32 {
+        self.read(self.ip + offset)
     }
 
     fn write(&mut self, addr: usize, value: i32) {

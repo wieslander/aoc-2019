@@ -17,7 +17,7 @@ fn main() {
             let mut program = Program::new(&initial_memory);
             program.run();
 
-            if program.output() == 19690720 {
+            if program.read(0) == 19690720 {
                 let res = 100 * noun + verb;
                 println!("{}", res);
                 process::exit(0);

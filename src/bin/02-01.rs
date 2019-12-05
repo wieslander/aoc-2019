@@ -11,5 +11,5 @@ fn main() {
     initial_memory[2] = 2;
     let mut program = Program::new(&initial_memory);
     program.run();
-    println!("{}", program.output());
+    println!("{}", program.read(0));
 }
