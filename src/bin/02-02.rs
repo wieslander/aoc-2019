@@ -4,7 +4,7 @@ use aoc::intcode::Program;
 
 fn main() {
     let input = get_input();
-    let orig_memory: Vec<usize> = input
+    let orig_memory: Vec<i32> = input
         .split(',')
         .map(|x| x.parse().expect("NaN"))
         .collect();
