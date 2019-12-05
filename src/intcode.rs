@@ -2,6 +2,7 @@ pub struct Program {
     ip: usize,
     memory: Vec<i32>,
     halted: bool,
+    jumped: bool,
     _input: Option<i32>,
 }
 
@@ -29,6 +30,10 @@ impl Instruction {
             2 => 4,
             3 => 2,
             4 => 2,
+            5 => 3,
+            6 => 3,
+            7 => 4,
+            8 => 4,
             99 => 1,
             _ => panic!("Unknown opcode: {}", self.opcode),
         }
@@ -45,6 +50,7 @@ impl Program {
             ip: 0,
             memory: initial_memory.clone(),
             halted: false,
+            jumped: false,
             _input: None,
         }
     }
@@ -103,10 +109,17 @@ impl Program {
             2 => self.mult(&instruction.params),
             3 => self.input(&instruction.params),
             4 => self.output(&instruction.params),
+            5 => self.jump_if_true(&instruction.params),
+            6 => self.jump_if_false(&instruction.params),
+            7 => self.lt(&instruction.params),
+            8 => self.eq(&instruction.params),
             99 => self.halt(),
             _ => panic!("Unknown opcode: {}", opcode),
         }
-        self.ip += instruction.len();
+        if !self.jumped {
+            self.ip += instruction.len();
+        }
+        self.jumped = false;
     }
 
     fn add(&mut self, params: &Vec<Param>) {
@@ -134,6 +147,41 @@ impl Program {
     fn output(&self, params: &Vec<Param>) {
         let val = self.read_param(&params[0]);
         println!("{}", val);
+    }
+
+    fn jump_if_true(&mut self, params: &Vec<Param>) {
+        let val = self.read_param(&params[0]);
+        if val != 0 {
+            self.jump(&params[1]);
+        }
+    }
+
+    fn jump_if_false(&mut self, params: &Vec<Param>) {
+        let val = self.read_param(&params[0]);
+        if val == 0 {
+            self.jump(&params[1]);
+        }
+    }
+
+    fn jump(&mut self, param: &Param) {
+        self.ip = self.read_param(param) as usize;
+        self.jumped = true;
+    }
+
+    fn lt(&mut self, params: &Vec<Param>) {
+        let val0 = self.read_param(&params[0]);
+        let val1 = self.read_param(&params[1]);
+        let dst = params[2].value as usize;
+
+        self.write(dst, (val0 < val1) as i32);
+    }
+
+    fn eq(&mut self, params: &Vec<Param>) {
+        let val0 = self.read_param(&params[0]);
+        let val1 = self.read_param(&params[1]);
+        let dst = params[2].value as usize;
+
+        self.write(dst, (val0 == val1) as i32);
     }
 
     fn halt(&mut self) {
