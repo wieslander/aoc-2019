@@ -2,6 +2,7 @@ pub struct Program {
     ip: usize,
     memory: Vec<i32>,
     halted: bool,
+    _input: Option<i32>,
 }
 
 struct Param {
@@ -26,6 +27,8 @@ impl Instruction {
         match self.opcode {
             1 => 4,
             2 => 4,
+            3 => 2,
+            4 => 2,
             99 => 1,
             _ => panic!("Unknown opcode: {}", self.opcode),
         }
@@ -42,6 +45,7 @@ impl Program {
             ip: 0,
             memory: initial_memory.clone(),
             halted: false,
+            _input: None,
         }
     }
 
@@ -51,12 +55,12 @@ impl Program {
         }
     }
 
-    pub fn output(&self) -> i32 {
-        self.read(0)
-    }
-
     pub fn read(&self, addr: usize) -> i32 {
         self.memory[addr]
+    }
+
+    pub fn set_input(&mut self, input: i32) {
+        self._input = Some(input);
     }
 
     fn raw_param(&self, offset: usize) -> i32 {
@@ -97,6 +101,8 @@ impl Program {
         match opcode {
             1 => self.add(&instruction.params),
             2 => self.mult(&instruction.params),
+            3 => self.input(&instruction.params),
+            4 => self.output(&instruction.params),
             99 => self.halt(),
             _ => panic!("Unknown opcode: {}", opcode),
         }
@@ -115,6 +121,19 @@ impl Program {
         let val1 = self.read_param(&params[1]);
         let dst = params[2].value as usize;
         self.write(dst, val0 * val1);
+    }
+
+    fn input(&mut self, params: &Vec<Param>) {
+        let dst = params[0].value as usize;
+        match self._input {
+            Some(input) => self.write(dst, input),
+            None => panic!("No input available"),
+        }
+    }
+
+    fn output(&self, params: &Vec<Param>) {
+        let val = self.read_param(&params[0]);
+        println!("{}", val);
     }
 
     fn halt(&mut self) {
