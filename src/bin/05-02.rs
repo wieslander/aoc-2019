@@ -10,4 +10,5 @@ fn main() {
     let mut program = Program::new(&initial_memory);
     program.set_input(5);
     program.run();
+    println!("{}", program.pop_output().unwrap());
 }

@@ -3,7 +3,8 @@ pub struct Program {
     memory: Vec<i32>,
     halted: bool,
     jumped: bool,
-    _input: Option<i32>,
+    inputs: Vec<i32>,
+    outputs: Vec<i32>,
 }
 
 struct Param {
@@ -51,8 +52,22 @@ impl Program {
             memory: initial_memory.clone(),
             halted: false,
             jumped: false,
-            _input: None,
+            inputs: vec![],
+            outputs: vec![],
         }
+    }
+
+    pub fn reset(&mut self, initial_memory: &Vec<i32>) {
+        self.ip = 0;
+        self.memory = initial_memory.clone();
+        self.halted = false;
+        self.jumped = false;
+        self.inputs.clear();
+        self.outputs.clear();
+    }
+
+    pub fn is_running(&self) -> bool {
+        !self.halted
     }
 
     pub fn run(&mut self) {
@@ -61,12 +76,24 @@ impl Program {
         }
     }
 
+    pub fn pause_on_output(&mut self) -> Option<i32> {
+        while self.outputs.len() == 0 && !self.halted {
+            self.step();
+        }
+
+        self.pop_output()
+    }
+
     pub fn read(&self, addr: usize) -> i32 {
         self.memory[addr]
     }
 
     pub fn set_input(&mut self, input: i32) {
-        self._input = Some(input);
+        self.inputs.insert(0, input);
+    }
+
+    pub fn pop_output(&mut self) -> Option<i32> {
+        self.outputs.pop()
     }
 
     fn raw_param(&self, offset: usize) -> i32 {
@@ -138,15 +165,16 @@ impl Program {
 
     fn input(&mut self, params: &Vec<Param>) {
         let dst = params[0].value as usize;
-        match self._input {
+
+        match self.inputs.pop() {
             Some(input) => self.write(dst, input),
             None => panic!("No input available"),
         }
     }
 
-    fn output(&self, params: &Vec<Param>) {
+    fn output(&mut self, params: &Vec<Param>) {
         let val = self.read_param(&params[0]);
-        println!("{}", val);
+        self.outputs.push(val);
     }
 
     fn jump_if_true(&mut self, params: &Vec<Param>) {
