@@ -7,11 +7,18 @@ pub struct Program {
     jumped: bool,
     inputs: Vec<i64>,
     outputs: Vec<i64>,
+    relative_base: i64,
 }
 
 struct Param {
     value: i64,
-    immediate: bool,
+    mode: ParameterMode,
+}
+
+enum ParameterMode {
+    Position,
+    Immediate,
+    Relative,
 }
 
 struct Instruction {
@@ -37,13 +44,14 @@ impl Instruction {
             6 => 3,
             7 => 4,
             8 => 4,
+            9 => 2,
             99 => 1,
             _ => panic!("Unknown opcode: {}", self.opcode),
         }
     }
 
-    pub fn add_param(&mut self, value: i64, immediate: bool) {
-        self.params.push(Param { value, immediate });
+    pub fn add_param(&mut self, value: i64, mode: ParameterMode) {
+        self.params.push(Param { value, mode });
     }
 }
 
@@ -61,6 +69,7 @@ impl Program {
             jumped: false,
             inputs: vec![],
             outputs: vec![],
+            relative_base: 0,
         }
     }
 
@@ -76,6 +85,7 @@ impl Program {
         self.jumped = false;
         self.inputs.clear();
         self.outputs.clear();
+        self.relative_base = 0;
     }
 
     pub fn is_running(&self) -> bool {
@@ -115,15 +125,29 @@ impl Program {
         self.read(self.ip + offset)
     }
 
-    fn write(&mut self, addr: usize, value: i64) {
+    fn write(&mut self, addr_param: &Param, value: i64) {
+        let addr = self.get_write_address(&addr_param);
         self.memory.insert(addr, value);
     }
 
+    fn get_write_address(&self, param: &Param) -> usize {
+        let addr = match param.mode {
+            ParameterMode::Position => param.value,
+            ParameterMode::Relative => self.relative_base + param.value,
+            _ => panic!("Unsupported parameter mode for write"),
+        };
+
+        addr as usize
+    }
+
     fn read_param(&self, param: &Param) -> i64 {
-        if param.immediate {
-            param.value
-        } else {
-            self.read(param.value as usize)
+        match param.mode {
+            ParameterMode::Position => self.read(param.value as usize),
+            ParameterMode::Immediate => param.value,
+            ParameterMode::Relative => {
+                let addr = (self.relative_base + param.value) as usize;
+                self.read(addr)
+            },
         }
     }
 
@@ -135,9 +159,14 @@ impl Program {
 
         for i in 1..instruction.len() {
             let value = self.raw_param(i);
-            let immediate = (param_modifiers / 10i64.pow(i as u32 + 1)) % 2 == 1;
+            let mode = match (param_modifiers / 10i64.pow(i as u32 + 1)) % 10 {
+                0 => ParameterMode::Position,
+                1 => ParameterMode::Immediate,
+                2 => ParameterMode::Relative,
+                _ => panic!("Unknown parameter mode"),
+            };
 
-            instruction.add_param(value, immediate);
+            instruction.add_param(value, mode);
         }
 
         instruction
@@ -155,6 +184,7 @@ impl Program {
             6 => self.jump_if_false(&instruction.params),
             7 => self.lt(&instruction.params),
             8 => self.eq(&instruction.params),
+            9 => self.add_relbase(&instruction.params),
             99 => self.halt(),
             _ => panic!("Unknown opcode: {}", opcode),
         }
@@ -167,22 +197,18 @@ impl Program {
     fn add(&mut self, params: &Vec<Param>) {
         let val0 = self.read_param(&params[0]);
         let val1 = self.read_param(&params[1]);
-        let dst = params[2].value as usize;
-        self.write(dst, val0 + val1);
+        self.write(&params[2], val0 + val1);
     }
 
     fn mult(&mut self, params: &Vec<Param>) {
         let val0 = self.read_param(&params[0]);
         let val1 = self.read_param(&params[1]);
-        let dst = params[2].value as usize;
-        self.write(dst, val0 * val1);
+        self.write(&params[2], val0 * val1);
     }
 
     fn input(&mut self, params: &Vec<Param>) {
-        let dst = params[0].value as usize;
-
         match self.inputs.pop() {
-            Some(input) => self.write(dst, input),
+            Some(input) => self.write(&params[0], input),
             None => panic!("No input available"),
         }
     }
@@ -214,17 +240,20 @@ impl Program {
     fn lt(&mut self, params: &Vec<Param>) {
         let val0 = self.read_param(&params[0]);
         let val1 = self.read_param(&params[1]);
-        let dst = params[2].value as usize;
 
-        self.write(dst, (val0 < val1) as i64);
+        self.write(&params[2], (val0 < val1) as i64);
     }
 
     fn eq(&mut self, params: &Vec<Param>) {
         let val0 = self.read_param(&params[0]);
         let val1 = self.read_param(&params[1]);
-        let dst = params[2].value as usize;
 
-        self.write(dst, (val0 == val1) as i64);
+        self.write(&params[2], (val0 == val1) as i64);
+    }
+
+    fn add_relbase(&mut self, params: &Vec<Param>) {
+        let offset = self.read_param(&params[0]);
+        self.relative_base += offset;
     }
 
     fn halt(&mut self) {
