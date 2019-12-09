@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 pub struct Program {
     ip: usize,
-    memory: Vec<i64>,
+    memory: HashMap<usize, i64>,
     halted: bool,
     jumped: bool,
     inputs: Vec<i64>,
@@ -47,9 +49,14 @@ impl Instruction {
 
 impl Program {
     pub fn new(initial_memory: &Vec<i64>) -> Program {
+        let mut memory = HashMap::new();
+        for (addr, &value) in initial_memory.iter().enumerate() {
+            memory.insert(addr, value);
+        }
+
         Program {
             ip: 0,
-            memory: initial_memory.clone(),
+            memory,
             halted: false,
             jumped: false,
             inputs: vec![],
@@ -58,8 +65,13 @@ impl Program {
     }
 
     pub fn reset(&mut self, initial_memory: &Vec<i64>) {
+        let mut memory = HashMap::new();
+        for (addr, &value) in initial_memory.iter().enumerate() {
+            memory.insert(addr, value);
+        }
+
         self.ip = 0;
-        self.memory = initial_memory.clone();
+        self.memory = memory;
         self.halted = false;
         self.jumped = false;
         self.inputs.clear();
@@ -85,7 +97,10 @@ impl Program {
     }
 
     pub fn read(&self, addr: usize) -> i64 {
-        self.memory[addr]
+        match self.memory.get(&addr) {
+            Some(value) => *value,
+            None => 0,
+        }
     }
 
     pub fn set_input(&mut self, input: i64) {
@@ -101,7 +116,7 @@ impl Program {
     }
 
     fn write(&mut self, addr: usize, value: i64) {
-        self.memory[addr] = value;
+        self.memory.insert(addr, value);
     }
 
     fn read_param(&self, param: &Param) -> i64 {
