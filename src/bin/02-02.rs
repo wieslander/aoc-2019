@@ -4,14 +4,13 @@ use aoc::intcode::Program;
 
 fn main() {
     let input = get_input();
-    let orig_memory: Vec<i32> = input
+    let mut initial_memory: Vec<i64> = input
         .split(',')
         .map(|x| x.parse().expect("NaN"))
         .collect();
 
     for noun in 0..100 {
         for verb in 0..100 {
-            let mut initial_memory = orig_memory.clone();
             initial_memory[1] = noun;
             initial_memory[2] = verb;
             let mut program = Program::new(&initial_memory);

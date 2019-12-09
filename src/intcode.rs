@@ -1,24 +1,24 @@
 pub struct Program {
     ip: usize,
-    memory: Vec<i32>,
+    memory: Vec<i64>,
     halted: bool,
     jumped: bool,
-    inputs: Vec<i32>,
-    outputs: Vec<i32>,
+    inputs: Vec<i64>,
+    outputs: Vec<i64>,
 }
 
 struct Param {
-    value: i32,
+    value: i64,
     immediate: bool,
 }
 
 struct Instruction {
-    opcode: i32,
+    opcode: i64,
     params: Vec<Param>,
 }
 
 impl Instruction {
-    pub fn new(opcode: i32) -> Instruction {
+    pub fn new(opcode: i64) -> Instruction {
         Instruction {
             opcode,
             params: vec![],
@@ -40,13 +40,13 @@ impl Instruction {
         }
     }
 
-    pub fn add_param(&mut self, value: i32, immediate: bool) {
+    pub fn add_param(&mut self, value: i64, immediate: bool) {
         self.params.push(Param { value, immediate });
     }
 }
 
 impl Program {
-    pub fn new(initial_memory: &Vec<i32>) -> Program {
+    pub fn new(initial_memory: &Vec<i64>) -> Program {
         Program {
             ip: 0,
             memory: initial_memory.clone(),
@@ -57,7 +57,7 @@ impl Program {
         }
     }
 
-    pub fn reset(&mut self, initial_memory: &Vec<i32>) {
+    pub fn reset(&mut self, initial_memory: &Vec<i64>) {
         self.ip = 0;
         self.memory = initial_memory.clone();
         self.halted = false;
@@ -76,7 +76,7 @@ impl Program {
         }
     }
 
-    pub fn pause_on_output(&mut self) -> Option<i32> {
+    pub fn pause_on_output(&mut self) -> Option<i64> {
         while self.outputs.len() == 0 && !self.halted {
             self.step();
         }
@@ -84,27 +84,27 @@ impl Program {
         self.pop_output()
     }
 
-    pub fn read(&self, addr: usize) -> i32 {
+    pub fn read(&self, addr: usize) -> i64 {
         self.memory[addr]
     }
 
-    pub fn set_input(&mut self, input: i32) {
+    pub fn set_input(&mut self, input: i64) {
         self.inputs.insert(0, input);
     }
 
-    pub fn pop_output(&mut self) -> Option<i32> {
+    pub fn pop_output(&mut self) -> Option<i64> {
         self.outputs.pop()
     }
 
-    fn raw_param(&self, offset: usize) -> i32 {
+    fn raw_param(&self, offset: usize) -> i64 {
         self.read(self.ip + offset)
     }
 
-    fn write(&mut self, addr: usize, value: i32) {
+    fn write(&mut self, addr: usize, value: i64) {
         self.memory[addr] = value;
     }
 
-    fn read_param(&self, param: &Param) -> i32 {
+    fn read_param(&self, param: &Param) -> i64 {
         if param.immediate {
             param.value
         } else {
@@ -120,7 +120,7 @@ impl Program {
 
         for i in 1..instruction.len() {
             let value = self.raw_param(i);
-            let immediate = (param_modifiers / 10i32.pow(i as u32 + 1)) % 2 == 1;
+            let immediate = (param_modifiers / 10i64.pow(i as u32 + 1)) % 2 == 1;
 
             instruction.add_param(value, immediate);
         }
@@ -201,7 +201,7 @@ impl Program {
         let val1 = self.read_param(&params[1]);
         let dst = params[2].value as usize;
 
-        self.write(dst, (val0 < val1) as i32);
+        self.write(dst, (val0 < val1) as i64);
     }
 
     fn eq(&mut self, params: &Vec<Param>) {
@@ -209,7 +209,7 @@ impl Program {
         let val1 = self.read_param(&params[1]);
         let dst = params[2].value as usize;
 
-        self.write(dst, (val0 == val1) as i32);
+        self.write(dst, (val0 == val1) as i64);
     }
 
     fn halt(&mut self) {
