@@ -10,15 +10,21 @@ pub struct Program {
     relative_base: i64,
 }
 
-struct Param {
-    value: i64,
-    mode: ParameterMode,
+enum Param {
+    Position(usize),
+    Immediate(i64),
+    Relative(i64),
 }
 
-enum ParameterMode {
-    Position,
-    Immediate,
-    Relative,
+impl Param {
+    fn new(value: i64, mode_code: i64) -> Param {
+        match mode_code {
+            0 => Param::Position(value as usize),
+            1 => Param::Immediate(value),
+            2 => Param::Relative(value),
+            _ => panic!("Unknown parameter mode {}", mode_code),
+        }
+    }
 }
 
 struct Instruction {
@@ -50,8 +56,8 @@ impl Instruction {
         }
     }
 
-    pub fn add_param(&mut self, value: i64, mode: ParameterMode) {
-        self.params.push(Param { value, mode });
+    pub fn add_param(&mut self, param: Param) {
+        self.params.push(param);
     }
 }
 
@@ -131,21 +137,19 @@ impl Program {
     }
 
     fn get_write_address(&self, param: &Param) -> usize {
-        let addr = match param.mode {
-            ParameterMode::Position => param.value,
-            ParameterMode::Relative => self.relative_base + param.value,
+        match param {
+            Param::Position(addr) => *addr,
+            Param::Relative(offset) => (self.relative_base + offset) as usize,
             _ => panic!("Unsupported parameter mode for write"),
-        };
-
-        addr as usize
+        }
     }
 
     fn read_param(&self, param: &Param) -> i64 {
-        match param.mode {
-            ParameterMode::Position => self.read(param.value as usize),
-            ParameterMode::Immediate => param.value,
-            ParameterMode::Relative => {
-                let addr = (self.relative_base + param.value) as usize;
+        match param {
+            Param::Position(addr) => self.read(*addr),
+            Param::Immediate(value) => *value,
+            Param::Relative(offset) => {
+                let addr = (self.relative_base + offset) as usize;
                 self.read(addr)
             },
         }
@@ -159,14 +163,9 @@ impl Program {
 
         for i in 1..instruction.len() {
             let value = self.raw_param(i);
-            let mode = match (param_modifiers / 10i64.pow(i as u32 + 1)) % 10 {
-                0 => ParameterMode::Position,
-                1 => ParameterMode::Immediate,
-                2 => ParameterMode::Relative,
-                _ => panic!("Unknown parameter mode"),
-            };
-
-            instruction.add_param(value, mode);
+            let mode_code = (param_modifiers / 10i64.pow(i as u32 + 1)) % 10;
+            let param = Param::new(value, mode_code);
+            instruction.add_param(param);
         }
 
         instruction
