@@ -2,7 +2,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
-use ansi_term::Colour::{Red, Blue, White, Green};
+use ansi_term::Colour::{Red, Blue, White, Yellow};
 use aoc::get_input;
 use aoc::intcode::Program;
 
@@ -21,9 +21,9 @@ fn print_screen(grid: &HashMap<(i64, i64), i64>, score: i64) {
         let line: Vec<_> = (0..=width).map(|x| {
             match grid.get(&(x, y)) {
                 Some(0) => String::from(" "),
-                Some(1) => Blue.paint("█").to_string(),
-                Some(2) => Green.paint("░").to_string(),
-                Some(3) => White.paint("▔").to_string(),
+                Some(1) => White.paint("█").to_string(),
+                Some(2) => Yellow.paint("╳").to_string(),
+                Some(3) => Blue.paint("▔").to_string(),
                 Some(4) => Red.paint("●").to_string(),
                 None => String::from(" "),
                 _ => String::from("_"),
