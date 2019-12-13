@@ -112,6 +112,15 @@ impl Program {
         self.pop_output()
     }
 
+    pub fn needs_input(&self) -> bool {
+        let instruction = self.get_instruction();
+        instruction.opcode == 3
+    }
+
+    pub fn has_output(&self) -> bool {
+        self.outputs.len() > 0
+    }
+
     pub fn read(&self, addr: usize) -> i64 {
         match self.memory.get(&addr) {
             Some(value) => *value,
@@ -171,7 +180,7 @@ impl Program {
         instruction
     }
 
-    fn step(&mut self) {
+    pub fn step(&mut self) {
         let instruction = self.get_instruction();
         let opcode = instruction.opcode;
         match opcode {
