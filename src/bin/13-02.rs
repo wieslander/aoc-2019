@@ -88,7 +88,7 @@ fn main() {
             let values: Vec<i64> = grid.values().map(|v| *v).collect();
             if values.contains(&4) && values.contains(&3) {
                 print_screen(&grid, score);
-                sleep(Duration::from_millis(50));
+                sleep(Duration::from_millis(25));
             }
         }
     }
