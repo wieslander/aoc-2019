@@ -2,6 +2,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
+use ansi_term::Colour::{Red, Blue, White, Green};
 use aoc::get_input;
 use aoc::intcode::Program;
 
@@ -17,15 +18,15 @@ fn print_screen(grid: &HashMap<(i64, i64), i64>, score: i64) {
     let mut output = vec![];
 
     for y in 0..=height {
-        let line: Vec<&str> = (0..=width).map(|x| {
+        let line: Vec<_> = (0..=width).map(|x| {
             match grid.get(&(x, y)) {
-                Some(0) => " ",
-                Some(1) => "█",
-                Some(2) => "░",
-                Some(3) => "▔",
-                Some(4) => "●",
-                None => " ",
-                _ => "_",
+                Some(0) => String::from(" "),
+                Some(1) => Blue.paint("█").to_string(),
+                Some(2) => Green.paint("░").to_string(),
+                Some(3) => White.paint("▔").to_string(),
+                Some(4) => Red.paint("●").to_string(),
+                None => String::from(" "),
+                _ => String::from("_"),
             }
         }).collect();
         output.push(line.join(""));
