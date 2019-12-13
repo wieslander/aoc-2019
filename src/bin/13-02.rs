@@ -1,4 +1,4 @@
-use std::cmp::{min, max};
+use std::cmp::max;
 use std::collections::HashMap;
 use aoc::get_input;
 use aoc::intcode::Program;
@@ -33,33 +33,20 @@ fn print_screen(grid: &HashMap<(i64, i64), i64>, score: i64) {
 }
 
 fn get_joystick(grid: &HashMap<(i64, i64), i64>) -> i64 {
-    let mut paddle_left = -1;
-    let mut paddle_right = -1;
+    let mut paddle = -1;
     let mut ball = -1;
 
     for ((x, _), tile) in grid {
         match tile {
-            3 => {
-                if paddle_left == -1 {
-                    paddle_left = *x;
-                } else {
-                    paddle_left = min(paddle_left, *x);
-                }
-
-                if paddle_right == -1 {
-                    paddle_right = *x;
-                } else {
-                    paddle_right = max(paddle_right, *x);
-                }
-            },
+            3 => paddle = *x,
             4 => ball = *x,
             _ => (),
         }
     }
 
-    if paddle_left > ball {
+    if paddle > ball {
         -1
-    } else if paddle_right < ball {
+    } else if paddle < ball {
         1
     } else {
         0
