@@ -20,10 +20,10 @@ fn print_screen(grid: &HashMap<(i64, i64), i64>, score: i64) {
         let line: Vec<&str> = (0..=width).map(|x| {
             match grid.get(&(x, y)) {
                 Some(0) => " ",
-                Some(1) => "#",
-                Some(2) => "x",
-                Some(3) => "=",
-                Some(4) => "o",
+                Some(1) => "█",
+                Some(2) => "░",
+                Some(3) => "▔",
+                Some(4) => "●",
                 None => " ",
                 _ => "_",
             }
