@@ -16,8 +16,8 @@ fn print_screen(grid: &HashMap<(i64, i64), i64>, score: i64) {
 
     let mut output = vec![];
 
-    for y in 0..height {
-        let line: Vec<&str> = (0..width).map(|x| {
+    for y in 0..(height + 1) {
+        let line: Vec<&str> = (0..(width + 1)).map(|x| {
             match grid.get(&(x, y)) {
                 Some(0) => " ",
                 Some(1) => "#",
