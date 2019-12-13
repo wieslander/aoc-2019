@@ -1,5 +1,7 @@
 use std::cmp::max;
 use std::collections::HashMap;
+use std::thread::sleep;
+use std::time::Duration;
 use aoc::get_input;
 use aoc::intcode::Program;
 
@@ -66,7 +68,6 @@ fn main() {
 
     while program.is_running() {
         if program.needs_input() {
-            print_screen(&grid, score);
             let joystick = get_joystick(&grid);
             program.set_input(joystick);
         }
@@ -82,6 +83,12 @@ fn main() {
             } else {
                 let tile = program.pause_on_output().unwrap();
                 grid.insert((x, y), tile);
+            }
+
+            let values: Vec<i64> = grid.values().map(|v| *v).collect();
+            if values.contains(&4) && values.contains(&3) {
+                print_screen(&grid, score);
+                sleep(Duration::from_millis(50));
             }
         }
     }
