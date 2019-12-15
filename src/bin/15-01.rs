@@ -59,6 +59,7 @@ impl Point {
 }
 
 enum Tile {
+    Droid,
     Wall,
     Floor,
     OxygenSystem,
@@ -161,6 +162,7 @@ fn render(window: &pancurses::Window, grid: &HashMap<Point, Tile>, droid: &Point
 
     for (pos, tile) in grid {
         let (mut output, mut color_pair) = match tile {
+            Tile::Droid => (" ● ", DROID),
             Tile::Unknown => (" ? ", UNKNOWN),
             Tile::Wall => ("   ", WALL),
             Tile::Floor => (" · ", FLOOR),
@@ -228,16 +230,16 @@ fn find_nearest_unknown(grid: &HashMap<Point, Tile>, droid: &Point) -> Option<Po
 
 fn get_next_move(droid: &Point, goal: &Point, grid: &HashMap<Point, Tile>) -> i64 {
     let route = find_optimal_route(droid, goal, grid);
-    droid.direction(&route[0])
+    droid.direction(&route[1])
 }
 
 fn reconstruct_path(node: &Point, parents: &HashMap<Point, Point>) -> Vec<Point> {
     let mut current = node;
-    let mut path = vec![];
+    let mut path = vec![*current];
 
     while parents.contains_key(current) {
-        path.insert(0, *current);
         current = parents.get(current).unwrap();
+        path.insert(0, *current);
     }
 
     path
@@ -246,6 +248,14 @@ fn reconstruct_path(node: &Point, parents: &HashMap<Point, Point>) -> Vec<Point>
 fn find_optimal_route(start: &Point, goal: &Point, grid: &HashMap<Point, Tile>) -> Vec<Point> {
     let mut planner = RoutePlanner::new(grid);
     planner.find_optimal_route(start, goal)
+}
+
+fn plot_route(window: &pancurses::Window, route: &Vec<Point>, droid: &Point, grid: &mut HashMap<Point, Tile>) {
+    for point in route {
+        grid.insert(*point, Tile::Droid);
+        render(&window, &grid, &droid);
+        sleep(Duration::from_millis(10));
+    }
 }
 
 fn main() {
@@ -308,14 +318,15 @@ fn main() {
         }
 
         render(&window, &grid, &droid);
-        // sleep(Duration::from_millis(25));
+        sleep(Duration::from_millis(10));
     }
 
     let goal = oxygen_system_location(&grid).unwrap();
     let route = find_optimal_route(&start, &goal, &grid);
 
+    plot_route(&window, &route, &droid, &mut grid);
     sleep(Duration::from_millis(2000));
     pancurses::endwin();
 
-    println!("{}", route.len());
+    println!("{}", route.len() - 1);
 }
