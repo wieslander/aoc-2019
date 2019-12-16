@@ -165,7 +165,7 @@ fn render(window: &pancurses::Window, grid: &HashMap<Point, Tile>, droid: &Point
     for (pos, tile) in grid {
         let (mut output, mut color_pair) = match tile {
             Tile::Droid => (" ● ", DROID),
-            Tile::Unknown => (" ? ", UNKNOWN),
+            Tile::Unknown => ("░░░", UNKNOWN),
             Tile::Wall => ("   ", WALL),
             Tile::Floor => (" · ", FLOOR),
             Tile::OxygenSystem => (" █ ", OXYGEN_SYSTEM),
@@ -351,7 +351,7 @@ fn main() {
         pancurses::COLOR_BLUE);
     pancurses::init_pair(
         UNKNOWN as i16,
-        pancurses::COLOR_YELLOW,
+        pancurses::COLOR_WHITE,
         pancurses::COLOR_BLACK);
 
     let start = Point { x: 30, y: 25 };
