@@ -1,41 +1,53 @@
-use std::cmp::max;
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
-use ansi_term::Colour::{Red, Blue, White, Yellow};
+use pancurses;
 use aoc::get_input;
 use aoc::intcode::Program;
 
-fn print_screen(grid: &HashMap<(i64, i64), i64>, score: i64) {
-    let mut width = 0;
-    let mut height = 0;
+fn render(window: &pancurses::Window, grid: &mut HashMap<(i64, i64), i64>, score: i64) {
+    let board_offset = 1;
 
-    for (x, y) in grid.keys() {
-        width = max(width, *x);
-        height = max(height, *y);
+    for (&(x, y), tile) in grid.iter_mut() {
+        let output = match tile {
+            0 => "   ",
+            1 => "███",
+            2 => "▐█▌",
+            3 => "▀▀▀",
+            4 => " ● ",
+            5 => " ▓ ",
+            6 => " ▒ ",
+            7 => " ░ ",
+            _ => "_",
+        };
+
+        let attr = pancurses::COLOR_PAIR(*tile as u32);
+
+        if *tile == 5 || *tile == 6 {
+            *tile += 1;
+        } else if *tile == 7 {
+            *tile = 0;
+        }
+
+
+        window.attron(attr);
+        let y = (y + board_offset) as i32;
+        let x = (x * 3) as i32;
+        window.mvprintw(y, x, output);
+        window.attroff(attr);
     }
 
-    let mut output = vec![];
-
-    for y in 0..=height {
-        let line: Vec<_> = (0..=width).map(|x| {
-            match grid.get(&(x, y)) {
-                Some(0) => String::from(" "),
-                Some(1) => White.paint("█").to_string(),
-                Some(2) => Yellow.paint("╳").to_string(),
-                Some(3) => Blue.paint("▔").to_string(),
-                Some(4) => Red.paint("●").to_string(),
-                None => String::from(" "),
-                _ => String::from("_"),
-            }
-        }).collect();
-        output.push(line.join(""));
-    }
-
-    println!("{}\n\nScore: {}\n", output.join("\n"), score);
+    window.attron(pancurses::COLOR_PAIR(2));
+    window.mvprintw(0, 114, format!("Score: {:5}", score));
+    window.attroff(pancurses::COLOR_PAIR(2));
+    window.refresh();
 }
 
 fn get_joystick(grid: &HashMap<(i64, i64), i64>) -> i64 {
+    let has_floor = match grid.get(&(1, 23)) {
+        Some(0) => false,
+        _ => true,
+    };
     let mut paddle = -1;
     let mut ball = -1;
 
@@ -47,9 +59,9 @@ fn get_joystick(grid: &HashMap<(i64, i64), i64>) -> i64 {
         }
     }
 
-    if paddle > ball {
+    if paddle > ball && (ball % 4 != 0 || !has_floor) {
         -1
-    } else if paddle < ball {
+    } else if paddle < ball && (ball % 4 != 0 || !has_floor) {
         1
     } else {
         0
@@ -59,6 +71,7 @@ fn get_joystick(grid: &HashMap<(i64, i64), i64>) -> i64 {
 fn main() {
     let input = get_input();
     let mut initial_memory: Vec<i64> = input
+        .trim()
         .split(',')
         .map(|x| x.parse().expect("NaN"))
         .collect();
@@ -66,6 +79,18 @@ fn main() {
     let mut program = Program::new(&initial_memory);
     let mut score = 0;
     let mut grid = HashMap::new();
+
+    let window = pancurses::initscr();
+    pancurses::start_color();
+    pancurses::init_pair(0, pancurses::COLOR_WHITE, pancurses::COLOR_BLACK);
+    pancurses::init_pair(1, pancurses::COLOR_WHITE, pancurses::COLOR_BLACK);
+    pancurses::init_pair(2, pancurses::COLOR_YELLOW, pancurses::COLOR_BLACK);
+    pancurses::init_pair(3, pancurses::COLOR_BLUE, pancurses::COLOR_BLACK);
+    pancurses::init_pair(4, pancurses::COLOR_RED, pancurses::COLOR_BLACK);
+    pancurses::init_pair(5, pancurses::COLOR_YELLOW, pancurses::COLOR_BLACK);
+    pancurses::init_pair(6, pancurses::COLOR_YELLOW, pancurses::COLOR_BLACK);
+    pancurses::init_pair(7, pancurses::COLOR_YELLOW, pancurses::COLOR_BLACK);
+    pancurses::curs_set(0);
 
     while program.is_running() {
         if program.needs_input() {
@@ -82,17 +107,23 @@ fn main() {
             if x == -1 && y == 0 {
                 score = program.pause_on_output().unwrap();
             } else {
-                let tile = program.pause_on_output().unwrap();
+                let mut tile = program.pause_on_output().unwrap();
+                if let Some(2) = grid.get(&(x, y)) {
+                    if tile != 2 {
+                        tile = 5;
+                    }
+                }
                 grid.insert((x, y), tile);
             }
 
             let values: Vec<i64> = grid.values().map(|v| *v).collect();
-            if values.contains(&4) && values.contains(&3) {
-                print_screen(&grid, score);
-                sleep(Duration::from_millis(25));
+            if values.contains(&3) && values.contains(&4) {
+                render(&window, &mut grid, score);
+                sleep(Duration::from_millis(50));
             }
         }
     }
 
+    pancurses::endwin();
     println!("{}", score);
 }
