@@ -2,41 +2,34 @@ use std::process;
 use aoc::get_input;
 use aoc::intcode::Program;
 
-fn scan_point(x: i64, y: i64, memory: &Vec<i64>) -> i64 {
-    let mut p = Program::new(&memory);
-    p.set_input(x);
-    p.set_input(y);
-    p.pause_on_output().unwrap()
-}
-
 fn main() {
     let memory = get_input()
         .trim()
         .split(',')
         .map(|x| x.trim().parse().expect("NaN"))
         .collect();
+
     let scan = |x, y| {
-        scan_point(x, y, &memory)
+        let mut p = Program::new(&memory);
+        p.set_input(x);
+        p.set_input(y);
+        p.pause_on_output().unwrap()
     };
 
-    let height = |x, y_start| {
-        let mut y = y_start;
+    let height = |x, y_start, min_height| {
+        let mut y = y_start + min_height - 1;
         while scan(x, y) == 1 {
             y += 1;
         }
-        let h = y - y_start;
-        println!("height({}, {}) = {}", x, y_start, h);
-        h
+        y - y_start
     };
 
-    let width = |x_start, y| {
-        let mut x = x_start;
+    let width = |x_start, y, min_width| {
+        let mut x = x_start + min_width - 1;
         while scan(x, y) == 1 {
             x += 1;
         }
-        let w = x - x_start;
-        println!("width({}, {}) = {}", x_start, y, w);
-        w
+        x - x_start
     };
 
     let backtrack_from = |x_end, y_end| {
@@ -50,14 +43,21 @@ fn main() {
             prev_x = x;
             prev_y = y;
 
-            while height(x, y) >= 100 {
+            while scan(x, y + 99) == 1 {
                 x -= 1;
             }
             x += 1;
 
-            while width(x, y) >= 100 {
+            while scan(x + 99, y) == 1 {
                 y -= 1;
             }
+            y += 1;
+
+            while scan(x + 99, y) == 1 && scan(x, y + 99) == 1 {
+                x -= 1;
+                y -= 1;
+            }
+            x += 1;
             y += 1;
         }
 
@@ -80,6 +80,9 @@ fn main() {
         }
     }
 
+    let mut min_height = 1;
+    let mut min_width = 1;
+
     loop {
         let line_start = x;
         let mut line_end = 0;
@@ -98,7 +101,7 @@ fn main() {
 
         if line_width >= 150 {
             for candidate_x in (line_start..=(line_end - 99)).rev() {
-                if height(candidate_x, y) >= 100 {
+                if height(candidate_x, y, min_height) >= 100 {
                     backtrack_from(candidate_x, y);
                 } else {
                     break;
@@ -126,13 +129,16 @@ fn main() {
 
         if col_height >= 150 {
             for candidate_y in (col_start..=(col_end - 99)).rev() {
-                if width(x, candidate_y) >= 100 {
+                if width(x, candidate_y, min_width) >= 100 {
                     backtrack_from(x, candidate_y);
                 } else {
                     break;
                 }
             }
         }
+
+        min_width = line_width;
+        min_height = col_height;
 
         y = col_end;
     }
