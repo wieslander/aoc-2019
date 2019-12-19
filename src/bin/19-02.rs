@@ -43,17 +43,23 @@ fn main() {
         let mut x = x_end;
         let mut y = y_end;
 
-        while height(x, y) >= 100 {
-            x -= 1;
+        let mut prev_x = i64::max_value();
+        let mut prev_y = i64::max_value();
+
+        while prev_x != x || prev_y != y {
+            prev_x = x;
+            prev_y = y;
+
+            while height(x, y) >= 100 {
+                x -= 1;
+            }
+            x += 1;
+
+            while width(x, y) >= 100 {
+                y -= 1;
+            }
+            y += 1;
         }
-
-        x += 1;
-
-        while width(x, y) >= 100 {
-            y -= 1;
-        }
-
-        y += 1;
 
         println!("{}", x * 10000 + y);
         process::exit(0);
