@@ -2,7 +2,7 @@
 
 Solutions to Advent of Code 2019.
 
-All solutions are written in Rust and expects their input on stdin.  To
+All solutions are written in Rust and expect their input on stdin.  To
 run the solution for, say, day 15 part 2, run:
 
     $ cargo run --bin 15-02 < inputs/15.txt
