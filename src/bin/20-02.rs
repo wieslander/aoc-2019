@@ -1,5 +1,5 @@
 use std::cmp::{max, Ordering};
-use std::collections::{HashMap, BinaryHeap};
+use std::collections::{HashMap, HashSet, BinaryHeap};
 use std::collections::hash_map::Entry;
 use aoc::get_input;
 
@@ -70,11 +70,18 @@ enum Tile {
 
 type Grid = HashMap<Point, Tile>;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
+struct Warp {
+    portal: Point,
+    inwards: bool,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct State {
     position: Point,
     level: i32,
     cost: i32,
+    warps: Vec<Warp>,
 }
 
 impl Ord for State {
@@ -204,7 +211,7 @@ impl Maze {
         self.grid.get(position).unwrap_or(&Tile::Wall)
     }
 
-    fn neighbors(&self, position: &Point, level: i32) -> Vec<(Point, i32)> {
+    fn neighbors(&self, position: &Point, level: i32) -> Vec<(Point, i32, Option<String>)> {
         let mut neighbors = vec![];
 
         for pos in position.neighbors() {
@@ -214,8 +221,8 @@ impl Maze {
 
             match self.tile(&pos) {
                 Tile::Wall => (),
-                Tile::Floor => neighbors.push((pos, level)),
-                Tile::Portal { name: _, neighbor, destination } => {
+                Tile::Floor => neighbors.push((pos, level, None)),
+                Tile::Portal { name, neighbor, destination } => {
                     let center_distance =
                         pos.manhattan_distance(&self.center);
                     let neighbor_center_distance =
@@ -227,7 +234,7 @@ impl Maze {
                     };
                     let new_level = level + level_diff;
                     if new_level >= 0 {
-                        neighbors.push((*destination, new_level));
+                        neighbors.push((*destination, new_level, Some(name.clone())));
                     }
                 },
             }
@@ -240,9 +247,9 @@ impl Maze {
         let mut costs = HashMap::new();
         let mut to_visit = BinaryHeap::new();
 
-        to_visit.push(State { position: self.start, cost: 0, level: 0 });
+        to_visit.push(State { position: self.start, cost: 0, level: 0, warps: vec![] });
 
-        while let Some(State { position, cost, level }) = to_visit.pop() {
+        while let Some(State { position, cost, level, warps }) = to_visit.pop() {
             if position == self.goal && level == 0 {
                 return Some(cost);
             }
@@ -251,18 +258,38 @@ impl Maze {
                 continue;
             }
 
-            for (neighbor, new_level) in self.neighbors(&position, level) {
+            for (neighbor, new_level, portal_name) in self.neighbors(&position, level) {
+                let mut warps = warps.clone();
+
+                if new_level != level {
+                    let inwards = new_level > level;
+                    let warp = Warp { portal: neighbor.clone(), inwards };
+                    if inwards && warps.contains(&warp) {
+                        println!("Won't loop through {} to level {}", portal_name.unwrap(), new_level);
+                        continue;
+                    } else {
+                        warps.push(warp);
+                    }
+                }
+
                 let new_cost = cost + 1;
                 let min_cost = *costs.get(&(neighbor, new_level)).unwrap_or(&i32::max_value());
 
-                if new_cost < min_cost {
-                    costs.insert((neighbor, new_level), new_cost);
+                if new_cost >= min_cost {
+                    continue;
+                }
 
-                    to_visit.push(State {
-                        position: neighbor,
-                        cost: new_cost,
-                        level: new_level,
-                    });
+                costs.insert((neighbor, new_level), new_cost);
+
+                to_visit.push(State {
+                    position: neighbor,
+                    cost: new_cost,
+                    level: new_level,
+                    warps,
+                });
+
+                if let Some(name) = portal_name {
+                    println!("Portal {}: level {} -> level {} @ cost {}", name, level, new_level, new_cost)
                 }
             }
         }
