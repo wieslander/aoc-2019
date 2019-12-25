@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct Program {
     ip: usize,
     memory: HashMap<usize, i64>,
@@ -114,7 +115,7 @@ impl Program {
 
     pub fn needs_input(&self) -> bool {
         let instruction = self.get_instruction();
-        instruction.opcode == 3
+        instruction.opcode == 3 && self.inputs.is_empty()
     }
 
     pub fn has_output(&self) -> bool {
